@@ -62,8 +62,25 @@ function CanvasEditorInner() {
       const workflow = response.data;
       useWorkflowStore.getState().setSelectedWorkflow(workflow);
 
+      // If workflow has no nodes, create a default trigger node
+      let workflowNodes = workflow.nodes;
+      if (!workflowNodes || workflowNodes.length === 0) {
+        const defaultTriggerNode: INode = {
+          id: `node_${Date.now()}`,
+          name: 'Start',
+          type: 'Webhook',
+          position: { x: 250, y: 200 },
+          parameters: {
+            httpMethod: 'POST',
+            path: `webhook/${Date.now()}`,
+          },
+        };
+        workflowNodes = [defaultTriggerNode];
+        setIsDirty(true); // Mark as dirty so user knows to save
+      }
+
       // Convert workflow nodes/connections to React Flow format
-      const reactFlowNodes: Node[] = workflow.nodes.map((node: INode) => ({
+      const reactFlowNodes: Node[] = workflowNodes.map((node: INode) => ({
         id: node.id,
         type: 'default',
         position: node.position,

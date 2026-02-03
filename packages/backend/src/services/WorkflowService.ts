@@ -20,11 +20,23 @@ export class WorkflowService {
       throw new Error('Workflow with this name already exists');
     }
 
+    // Create a default trigger node (Webhook) for every new workflow
+    const defaultTriggerNode: INode = {
+      id: `node_${Date.now()}`,
+      name: 'Start',
+      type: 'Webhook',
+      position: { x: 250, y: 200 },
+      parameters: {
+        httpMethod: 'POST',
+        path: `webhook/${Date.now()}`,
+      },
+    };
+
     const workflow = this.workflowRepository.create({
       userId,
       name,
       description,
-      nodes: [],
+      nodes: [defaultTriggerNode],
       connections: {},
       isActive: false,
     });
