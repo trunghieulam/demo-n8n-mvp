@@ -42,12 +42,12 @@ export class FunctionNode extends BaseNode {
       const jail = sandboxContext.global;
       const inputDataArray = inputItems.map((item) => item.json);
       
-      // Use ExternalCopy to pass data into the isolate
+      // Use ExternalCopy to pass data into the isolate - must use copyInto() to transfer actual values
       const dataCopy = new ivm.ExternalCopy(inputDataArray);
       const inputCopy = new ivm.ExternalCopy(inputDataArray);
       
-      await jail.set('data', dataCopy);
-      await jail.set('$input', inputCopy);
+      await jail.set('data', dataCopy.copyInto());
+      await jail.set('$input', inputCopy.copyInto());
 
       // Compile and run code with timeout
       const script = await isolate.compileScript(`

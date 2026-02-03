@@ -145,15 +145,10 @@ export class WorkflowService {
       throw new Error('Workflow not found');
     }
 
-    // Prevent deleting workflows that still have execution history
-    const executionCount = await this.executionRepository.count({
-      where: { workflowId },
-    });
+    // Delete all executions associated with this workflow first
+    await this.executionRepository.delete({ workflowId });
 
-    if (executionCount > 0) {
-      throw new Error('Cannot delete workflow: it has existing executions');
-    }
-
+    // Now delete the workflow
     await this.workflowRepository.remove(workflow);
   }
 
