@@ -41,6 +41,25 @@ docker compose down
 
 After starting the services, you need to create the database tables and seed the admin user:
 
+**On Linux/macOS:**
+```bash
+# Create database tables
+./init_db.sh
+
+# Seed the database with admin user
+docker compose exec backend node dist/scripts/seed.js
+```
+
+**On Windows:**
+```cmd
+REM Create database tables
+init_db.bat
+
+REM Seed the database with admin user
+docker compose exec backend node dist/scripts/seed.js
+```
+
+Alternatively, you can run the commands directly:
 ```bash
 # Create database tables
 docker compose exec backend node -e "const {AppDataSource} = require('./dist/config/database.js'); AppDataSource.initialize().then(() => AppDataSource.synchronize()).then(() => { console.log('Tables created'); process.exit(0); }).catch(e => { console.error(e); process.exit(1); });"
