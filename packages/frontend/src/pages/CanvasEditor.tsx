@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactFlow, {
   Node,
@@ -10,6 +10,8 @@ import ReactFlow, {
   Controls,
   Background,
   MiniMap,
+  useReactFlow,
+  ReactFlowProvider,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../stores/workflowStore';
@@ -20,24 +22,39 @@ import NodeConfigPanel from '../components/NodeConfigPanel';
 import { apiClient } from '../api/client';
 import type { INode, IConnections } from '@shared/types';
 
-export default function CanvasEditor() {
+function CanvasEditorInner() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { selectedWorkflow, updateWorkflow, executeWorkflow } = useWorkflowStore();
   const { nodeTypes, fetchNodeTypes } = useNodeTypesStore();
   const { selectNode, selectedNodeId } = useCanvasStore();
+  const { fitView, screenToFlowPosition, setCenter } = useReactFlow();
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+
+  const hasInitialFit = useRef(false);
 
   useEffect(() => {
     if (id) {
+      hasInitialFit.current = false; // Reset fit flag when workflow changes
       fetchWorkflow(id);
     }
     fetchNodeTypes();
   }, [id]);
+
+  // Fit view when nodes are first loaded from workflow
+  useEffect(() => {
+    if (nodes.length > 0 && !hasInitialFit.current) {
+      hasInitialFit.current = true;
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 300 });
+      }, 100);
+    }
+  }, [nodes.length, fitView]);
 
   const fetchWorkflow = async (workflowId: string) => {
     try {
@@ -149,9 +166,10 @@ export default function CanvasEditor() {
     }
   };
 
-  const addNode = (nodeType: string, position: { x: number; y: number }) => {
+  const addNode = useCallback((nodeType: string, position: { x: number; y: number }) => {
+    const nodeId = `node_${Date.now()}`;
     const newNode: Node = {
-      id: `node_${Date.now()}`,
+      id: nodeId,
       type: 'default',
       position,
       data: {
@@ -162,12 +180,43 @@ export default function CanvasEditor() {
     };
     setNodes((nds) => [...nds, newNode]);
     setIsDirty(true);
-  };
+    
+    // Focus on the new node after a short delay to ensure it's rendered
+    setTimeout(() => {
+      // Center the viewport on the new node's position
+      setCenter(position.x, position.y, { zoom: 1, duration: 400 });
+    }, 150);
+  }, [setNodes, fitView]);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const nodeType = event.dataTransfer.getData('application/reactflow');
+      if (!nodeType || !reactFlowWrapper.current) {
+        return;
+      }
+
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = screenToFlowPosition({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      addNode(nodeType, position);
+    },
+    [screenToFlowPosition, addNode]
+  );
+
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
 
   return (
     <div className="flex h-screen">
       <NodePalette onAddNode={addNode} />
-      <div className="flex-1 relative">
+      <div className="flex-1 relative" ref={reactFlowWrapper}>
         <div className="absolute top-0 left-0 right-0 bg-white border-b p-2 flex justify-between items-center z-10">
           <div className="flex gap-2">
             <button
@@ -198,6 +247,8 @@ export default function CanvasEditor() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
           fitView
         >
           <Controls />
@@ -207,5 +258,13 @@ export default function CanvasEditor() {
       </div>
       {selectedNodeId && <NodeConfigPanel nodeId={selectedNodeId} />}
     </div>
+  );
+}
+
+export default function CanvasEditor() {
+  return (
+    <ReactFlowProvider>
+      <CanvasEditorInner />
+    </ReactFlowProvider>
   );
 }
