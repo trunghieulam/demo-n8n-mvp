@@ -29,6 +29,7 @@ interface WorkflowState {
   };
   fetchWorkflows: (params?: { tag?: string; search?: string; limit?: number; offset?: number }) => Promise<void>;
   createWorkflow: (name: string, description?: string) => Promise<Workflow>;
+  createWorkflowFromTemplate: (templateId: string, name: string, description?: string) => Promise<Workflow>;
   updateWorkflow: (id: string, updates: Partial<Workflow>) => Promise<void>;
   deleteWorkflow: (id: string) => Promise<void>;
   duplicateWorkflow: (id: string, newName: string) => Promise<void>;
@@ -70,6 +71,25 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await apiClient.post('/workflows', { name, description });
+      set((state) => ({
+        workflows: [response.data, ...state.workflows],
+        isLoading: false,
+      }));
+      return response.data;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  createWorkflowFromTemplate: async (templateId: string, name: string, description?: string) => {
+    set({ isLoading: true });
+    try {
+      const response = await apiClient.post('/workflows/from-template', {
+        templateId,
+        name,
+        description,
+      });
       set((state) => ({
         workflows: [response.data, ...state.workflows],
         isLoading: false,

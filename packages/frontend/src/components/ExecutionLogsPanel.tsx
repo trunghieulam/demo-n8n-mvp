@@ -78,9 +78,28 @@ export default function ExecutionLogsPanel({ workflowId, isOpen, onClose }: Exec
     return String(data);
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      // Could add a toast notification here
+    });
+  };
+
   const renderNodeLog = (nodeId: string, nodeData: NodeExecutionData[], nodeName?: string) => {
     const latestData = nodeData[nodeData.length - 1];
     const isError = latestData.executionStatus === 'error';
+
+    // Get all output types dynamically (not just main/error)
+    const outputTypes = Object.keys(latestData.data).filter(
+      (key) => Array.isArray(latestData.data[key as keyof typeof latestData.data])
+    );
+
+    // Color mapping for output types
+    const getOutputTypeColor = (outputType: string) => {
+      if (outputType === 'error') return 'red';
+      if (outputType === 'true') return 'green';
+      if (outputType === 'false') return 'orange';
+      return 'gray';
+    };
 
     return (
       <div key={nodeId} className="mb-4 border rounded-lg overflow-hidden">
@@ -119,36 +138,105 @@ export default function ExecutionLogsPanel({ workflowId, isOpen, onClose }: Exec
               )}
             </div>
           )}
-          {latestData.data.main && latestData.data.main.length > 0 && (
+
+          {/* Input Section */}
+          {latestData.source && latestData.source.length > 0 && (
             <div className="mb-3">
-              <div className="font-semibold text-gray-700 mb-2">Output:</div>
+              <div className="font-semibold text-gray-700 mb-2 flex items-center justify-between">
+                <span>Input ({latestData.source.length} item{latestData.source.length !== 1 ? 's' : ''}):</span>
+                <button
+                  onClick={() =>
+                    copyToClipboard(formatNodeData(latestData.source))
+                  }
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                  title="Copy input to clipboard"
+                >
+                  Copy
+                </button>
+              </div>
               <div className="space-y-2">
-                {latestData.data.main.map((item, idx) => (
-                  <pre
-                    key={idx}
-                    className="p-2 bg-gray-50 border rounded text-xs overflow-x-auto"
-                  >
-                    {formatNodeData(item.json)}
-                  </pre>
+                {latestData.source.map((item: any, idx: number) => (
+                  <div key={idx} className="border border-blue-200 rounded overflow-hidden">
+                    <div className="bg-blue-50 px-2 py-1 text-xs font-medium text-blue-900">
+                      Input #{idx + 1}
+                    </div>
+                    <pre className="p-2 bg-blue-50 border-t border-blue-200 text-xs overflow-x-auto max-h-40 overflow-y-auto">
+                      {formatNodeData(item.json || item)}
+                    </pre>
+                  </div>
                 ))}
               </div>
             </div>
           )}
-          {latestData.data.error && latestData.data.error.length > 0 && (
-            <div className="mb-3">
-              <div className="font-semibold text-red-700 mb-2">Error Output:</div>
-              <div className="space-y-2">
-                {latestData.data.error.map((item, idx) => (
-                  <pre
-                    key={idx}
-                    className="p-2 bg-red-50 border border-red-200 rounded text-xs overflow-x-auto"
+
+          {/* Output Sections - Dynamic */}
+          {outputTypes.map((outputType) => {
+            const outputItems = latestData.data[outputType as keyof typeof latestData.data] as
+              | Array<{ json: unknown }>
+              | undefined;
+            if (!outputItems || outputItems.length === 0) return null;
+
+            const color = getOutputTypeColor(outputType);
+            const colorClasses = {
+              red: 'bg-red-50 border-red-200 text-red-800',
+              green: 'bg-green-50 border-green-200 text-green-800',
+              orange: 'bg-orange-50 border-orange-200 text-orange-800',
+              gray: 'bg-gray-50 border-gray-200 text-gray-800',
+            };
+            const bgClasses = {
+              red: 'bg-red-50',
+              green: 'bg-green-50',
+              orange: 'bg-orange-50',
+              gray: 'bg-gray-50',
+            };
+            const borderClasses = {
+              red: 'border-red-200',
+              green: 'border-green-200',
+              orange: 'border-orange-200',
+              gray: 'border-gray-200',
+            };
+            const textClasses = {
+              red: 'text-red-700',
+              green: 'text-green-700',
+              orange: 'text-orange-700',
+              gray: 'text-gray-700',
+            };
+
+            return (
+              <div key={outputType} className="mb-3">
+                <div
+                  className={`font-semibold mb-2 flex items-center justify-between ${textClasses[color]}`}
+                >
+                  <span>
+                    {outputType.charAt(0).toUpperCase() + outputType.slice(1)} Output ({outputItems.length} item{outputItems.length !== 1 ? 's' : ''}):
+                  </span>
+                  <button
+                    onClick={() =>
+                      copyToClipboard(
+                        outputItems.map((item) => formatNodeData(item.json)).join('\n\n')
+                      )
+                    }
+                    className="text-xs text-blue-600 hover:text-blue-800"
+                    title="Copy output to clipboard"
                   >
-                    {formatNodeData(item.json)}
-                  </pre>
-                ))}
+                    Copy
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {outputItems.map((item, idx) => (
+                    <div key={idx} className={`border rounded overflow-hidden ${borderClasses[color]}`}>
+                      <div className={`${bgClasses[color]} px-2 py-1 text-xs font-medium ${textClasses[color]}`}>
+                        Output #{idx + 1}
+                      </div>
+                      <pre className={`p-2 border-t ${colorClasses[color]} text-xs overflow-x-auto max-h-40 overflow-y-auto ${borderClasses[color]}`}>
+                        {formatNodeData(item.json)}
+                      </pre>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
     );

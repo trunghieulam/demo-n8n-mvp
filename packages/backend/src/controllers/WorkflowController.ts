@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth.js';
 import { WorkflowService } from '../services/WorkflowService.js';
+import { WORKFLOW_TEMPLATES } from '../data/templates.js';
 import type { INode, IConnections, WorkflowSettings } from '@shared/types';
 
 const workflowService = new WorkflowService();
@@ -228,6 +229,97 @@ export class WorkflowController {
     } catch (error) {
       if (error instanceof Error && error.message.includes('not found')) {
         res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async listTemplates(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      // Return templates without full node/connection details (just metadata)
+      const templates = WORKFLOW_TEMPLATES.map((template) => ({
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        nodeCount: template.nodes.length,
+      }));
+
+      res.json({ data: templates });
+    } catch (error) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  static async createFromTemplate(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      if (!req.userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const data = z
+        .object({
+          templateId: z.string(),
+          name: z.string().min(1),
+          description: z.string().optional(),
+        })
+        .parse(req.body);
+
+      const template = WORKFLOW_TEMPLATES.find((t) => t.id === data.templateId);
+
+      if (!template) {
+        res.status(404).json({ error: 'Template not found' });
+        return;
+      }
+
+      // Generate unique node IDs based on timestamp
+      const timestamp = Date.now();
+      const nodeIdMap: Record<string, string> = {};
+      const nodes: INode[] = template.nodes.map((node, index) => {
+        const newId = `node_${timestamp}_${index}`;
+        nodeIdMap[node.id] = newId;
+        return {
+          ...node,
+          id: newId,
+        };
+      });
+
+      // Update connections with new node IDs
+      const connections: IConnections = {};
+      for (const [sourceId, connMap] of Object.entries(template.connections)) {
+        const newSourceId = nodeIdMap[sourceId];
+        if (newSourceId) {
+          connections[newSourceId] = {};
+          for (const [connType, connArray] of Object.entries(connMap)) {
+            connections[newSourceId][connType] = connArray.map((connGroup) =>
+              connGroup.map((conn) => ({
+                ...conn,
+                node: nodeIdMap[conn.node] || conn.node,
+              }))
+            );
+          }
+        }
+      }
+
+      const workflow = await workflowService.create(req.userId, data.name, data.description);
+
+      // Update workflow with template nodes and connections
+      const updatedWorkflow = await workflowService.update(workflow.id, req.userId, {
+        nodes,
+        connections,
+      });
+
+      res.status(201).json(updatedWorkflow);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: 'Validation error', details: error.errors });
+        return;
+      }
+
+      if (error instanceof Error && error.message.includes('already exists')) {
+        res.status(400).json({ error: error.message });
         return;
       }
 

@@ -9,6 +9,8 @@ router.use(authMiddleware); // All routes require authentication
 
 router.get('/', WorkflowController.list);
 router.post('/', WorkflowController.create);
+router.get('/templates', WorkflowController.listTemplates);
+router.post('/from-template', WorkflowController.createFromTemplate);
 router.get('/:id', WorkflowController.getById);
 router.patch('/:id', WorkflowController.update);
 router.delete('/:id', WorkflowController.delete);

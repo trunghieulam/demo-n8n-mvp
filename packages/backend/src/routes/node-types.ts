@@ -7,5 +7,6 @@ const router = Router();
 router.use(authMiddleware); // All routes require authentication
 
 router.get('/', NodeTypeController.list);
+router.post('/test-connection', NodeTypeController.testConnection);
 
 export default router;

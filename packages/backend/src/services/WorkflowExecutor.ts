@@ -103,6 +103,8 @@ export class WorkflowExecutor {
 
     // Node execution results
     const nodeResults: Record<string, unknown> = {};
+    // Track input data for each node
+    const nodeInputs: Record<string, unknown> = {};
 
     // Find trigger nodes (nodes with no inputs)
     const triggerNodes = sortedNodes.filter((node) => {
@@ -118,6 +120,7 @@ export class WorkflowExecutor {
     // Execute trigger nodes first
     for (const node of triggerNodes) {
       const input = initialInput || {};
+      nodeInputs[node.id] = input;
       const result = await this.executeNode(node, context, input);
       nodeResults[node.id] = result;
     }
@@ -128,6 +131,7 @@ export class WorkflowExecutor {
 
       // Get input from connected nodes
       const input = this.getNodeInput(node.id, connections, nodeResults);
+      nodeInputs[node.id] = input;
 
       const result = await this.executeNode(node, context, input);
 
@@ -150,7 +154,7 @@ export class WorkflowExecutor {
         } else {
           // No error path, mark as error
           return {
-            executionData: this.buildExecutionData(nodeResults, node.id, result),
+            executionData: this.buildExecutionData(nodeResults, nodeInputs, node.id, result),
             status: 'error',
           };
         }
@@ -160,7 +164,7 @@ export class WorkflowExecutor {
     }
 
     return {
-      executionData: this.buildExecutionData(nodeResults),
+      executionData: this.buildExecutionData(nodeResults, nodeInputs),
       status: 'success',
     };
   }
@@ -289,22 +293,38 @@ export class WorkflowExecutor {
 
   private buildExecutionData(
     nodeResults: Record<string, unknown>,
+    nodeInputs: Record<string, unknown> = {},
     errorNodeId?: string,
     errorResult?: any
   ): ExecutionData {
     const runData: Record<string, any[]> = {};
 
+    // Helper to format input data
+    const formatInputData = (input: unknown): Array<{ json: unknown }> => {
+      if (Array.isArray(input)) {
+        return input.map((item) => ({ json: item }));
+      }
+      return [{ json: input }];
+    };
+
     for (const [nodeId, result] of Object.entries(nodeResults)) {
       const execResult = result as any;
+      const inputData = nodeInputs[nodeId];
       runData[nodeId] = [
         {
           startTime: execResult._execution?.startTime || Date.now(),
           executionTime: execResult._execution?.executionTime || 0,
-          source: [],
+          source: inputData ? formatInputData(inputData) : [],
           executionStatus: execResult._execution?.executionStatus || 'success',
           data: {
             main: execResult.main || [],
             error: execResult.error || [],
+            // Include all output types dynamically
+            ...Object.fromEntries(
+              Object.entries(execResult).filter(
+                ([key]) => key !== '_execution' && key !== 'main' && key !== 'error'
+              )
+            ),
           },
           error: execResult.error?.[0]?.json || undefined,
         },
@@ -312,11 +332,12 @@ export class WorkflowExecutor {
     }
 
     if (errorNodeId && errorResult) {
+      const inputData = nodeInputs[errorNodeId];
       runData[errorNodeId] = [
         {
           startTime: errorResult._execution?.startTime || Date.now(),
           executionTime: errorResult._execution?.executionTime || 0,
-          source: [],
+          source: inputData ? formatInputData(inputData) : [],
           executionStatus: 'error',
           data: {
             error: errorResult.error || [],
