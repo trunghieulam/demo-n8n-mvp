@@ -1,13 +1,16 @@
 import { Repository } from 'typeorm';
 import { AppDataSource } from '../config/database.js';
 import { Workflow } from '../entities/Workflow.js';
+import { Execution } from '../entities/Execution.js';
 import type { INode, IConnections, WorkflowSettings } from '@shared/types';
 
 export class WorkflowService {
   private workflowRepository: Repository<Workflow>;
+  private executionRepository: Repository<Execution>;
 
   constructor() {
     this.workflowRepository = AppDataSource.getRepository(Workflow);
+    this.executionRepository = AppDataSource.getRepository(Execution);
   }
 
   async create(userId: string, name: string, description?: string): Promise<Workflow> {
@@ -140,6 +143,15 @@ export class WorkflowService {
 
     if (!workflow) {
       throw new Error('Workflow not found');
+    }
+
+    // Prevent deleting workflows that still have execution history
+    const executionCount = await this.executionRepository.count({
+      where: { workflowId },
+    });
+
+    if (executionCount > 0) {
+      throw new Error('Cannot delete workflow: it has existing executions');
     }
 
     await this.workflowRepository.remove(workflow);

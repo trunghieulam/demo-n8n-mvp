@@ -29,7 +29,9 @@ export class ExecutionService {
       throw new Error('Workflow not found');
     }
 
-    if (mode !== 'test' && !workflow.isActive) {
+    // Allow manual and test executions even if workflow is inactive
+    // Only require active workflow for trigger/webhook modes
+    if (mode !== 'test' && mode !== 'manual' && !workflow.isActive) {
       throw new Error('Workflow is not active');
     }
 

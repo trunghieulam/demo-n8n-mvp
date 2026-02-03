@@ -12,6 +12,8 @@ import ReactFlow, {
   MiniMap,
   useReactFlow,
   ReactFlowProvider,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../stores/workflowStore';
@@ -37,6 +39,65 @@ function CanvasEditorInner() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   const hasInitialFit = useRef(false);
+
+  // Handle node changes and clean up edges when nodes are deleted
+  const handleNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      // Check for node deletions
+      const deletedNodeIds = new Set<string>();
+      changes.forEach((change) => {
+        if (change.type === 'remove') {
+          deletedNodeIds.add(change.id);
+        }
+      });
+
+      // Remove edges connected to deleted nodes
+      if (deletedNodeIds.size > 0) {
+        setEdges((eds) =>
+          eds.filter(
+            (edge) => !deletedNodeIds.has(edge.source) && !deletedNodeIds.has(edge.target)
+          )
+        );
+        setIsDirty(true);
+      }
+
+      // Call the default handler
+      onNodesChange(changes);
+      
+      // Mark as dirty if any changes occurred
+      if (changes.length > 0) {
+        setIsDirty(true);
+      }
+    },
+    [onNodesChange, setEdges]
+  );
+
+  // Delete node handler
+  const deleteNode = useCallback(
+    (nodeId: string) => {
+      // Prevent deleting the last node
+      if (nodes.length <= 1) {
+        alert('Cannot delete the last node. A workflow must have at least one node.');
+        return;
+      }
+
+      // Remove the node
+      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+      
+      // Remove edges connected to this node
+      setEdges((eds) =>
+        eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
+      );
+      
+      // Clear selection if the deleted node was selected
+      if (selectedNodeId === nodeId) {
+        selectNode(null);
+      }
+      
+      setIsDirty(true);
+    },
+    [nodes.length, setNodes, setEdges, selectedNodeId, selectNode]
+  );
 
   useEffect(() => {
     if (id) {
@@ -260,20 +321,21 @@ function CanvasEditorInner() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onDrop={onDrop}
           onDragOver={onDragOver}
           fitView
+          deleteKeyCode={['Delete', 'Backspace']}
         >
           <Controls />
           <Background />
           <MiniMap />
         </ReactFlow>
       </div>
-      {selectedNodeId && <NodeConfigPanel nodeId={selectedNodeId} />}
+      {selectedNodeId && <NodeConfigPanel nodeId={selectedNodeId} onDelete={deleteNode} />}
     </div>
   );
 }

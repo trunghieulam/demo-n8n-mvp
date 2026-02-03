@@ -146,9 +146,17 @@ export class WorkflowController {
 
       res.status(204).send();
     } catch (error) {
-      if (error instanceof Error && error.message.includes('not found')) {
-        res.status(404).json({ error: error.message });
-        return;
+      if (error instanceof Error) {
+        if (error.message.includes('not found')) {
+          res.status(404).json({ error: error.message });
+          return;
+        }
+
+        // Surface validation-like errors as 400 instead of generic 500
+        if (error.message.includes('executions') || error.message.includes('references')) {
+          res.status(400).json({ error: error.message });
+          return;
+        }
       }
 
       res.status(500).json({ error: 'Internal server error' });

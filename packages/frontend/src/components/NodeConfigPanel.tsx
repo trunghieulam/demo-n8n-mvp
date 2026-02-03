@@ -6,9 +6,10 @@ import { useCredentialStore } from '../stores/credentialStore';
 
 interface NodeConfigPanelProps {
   nodeId: string;
+  onDelete?: (nodeId: string) => void;
 }
 
-export default function NodeConfigPanel({ nodeId }: NodeConfigPanelProps) {
+export default function NodeConfigPanel({ nodeId, onDelete }: NodeConfigPanelProps) {
   const { selectedWorkflow, updateWorkflow } = useWorkflowStore();
   const { getNodeType } = useNodeTypesStore();
   const { credentials, fetchCredentials } = useCredentialStore();
@@ -129,12 +130,27 @@ export default function NodeConfigPanel({ nodeId }: NodeConfigPanelProps) {
           </div>
         )}
 
-        <button
-          onClick={handleSave}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Save Node
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Save Node
+          </button>
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete this node?')) {
+                  onDelete(nodeId);
+                }
+              }}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              title="Delete node"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
