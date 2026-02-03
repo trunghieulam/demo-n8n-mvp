@@ -27,10 +27,10 @@ export class WorkflowService {
     const defaultTriggerNode: INode = {
       id: `node_${Date.now()}`,
       name: 'Start',
-      type: 'Webhook',
+      type: 'n8n-nodes-base.webhook',
       position: { x: 250, y: 200 },
       parameters: {
-        httpMethod: 'POST',
+        method: 'POST',
         path: `webhook/${Date.now()}`,
       },
     };

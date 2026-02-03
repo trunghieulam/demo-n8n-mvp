@@ -21,6 +21,7 @@ import { useNodeTypesStore } from '../stores/nodeTypesStore';
 import { useCanvasStore } from '../stores/canvasStore';
 import NodePalette from '../components/NodePalette';
 import NodeConfigPanel from '../components/NodeConfigPanel';
+import ExecutionLogsPanel from '../components/ExecutionLogsPanel';
 import { apiClient } from '../api/client';
 import type { INode, IConnections } from '@shared/types';
 
@@ -36,6 +37,7 @@ function CanvasEditorInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [showLogsPanel, setShowLogsPanel] = useState(false);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
   const hasInitialFit = useRef(false);
@@ -129,10 +131,10 @@ function CanvasEditorInner() {
         const defaultTriggerNode: INode = {
           id: `node_${Date.now()}`,
           name: 'Start',
-          type: 'Webhook',
+          type: 'n8n-nodes-base.webhook',
           position: { x: 250, y: 200 },
           parameters: {
-            httpMethod: 'POST',
+            method: 'POST',
             path: `webhook/${Date.now()}`,
           },
         };
@@ -238,9 +240,15 @@ function CanvasEditorInner() {
     if (!id) return;
     try {
       await apiClient.post(`/workflows/${id}/execute`, {});
-      alert('Execution started');
+      // Show logs panel after execution starts
+      setShowLogsPanel(true);
+      // Refresh logs after a short delay
+      setTimeout(() => {
+        // The ExecutionLogsPanel will auto-refresh
+      }, 1000);
     } catch (error) {
       console.error('Failed to execute workflow:', error);
+      alert('Failed to execute workflow');
     }
   };
 
@@ -310,6 +318,17 @@ function CanvasEditorInner() {
             >
               Execute
             </button>
+            <button
+              onClick={() => setShowLogsPanel(!showLogsPanel)}
+              className={`px-4 py-2 rounded ${
+                showLogsPanel
+                  ? 'bg-gray-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+              title="Toggle execution logs"
+            >
+              {showLogsPanel ? 'Hide Logs' : 'Show Logs'}
+            </button>
           </div>
           <button
             onClick={() => navigate('/workflows')}
@@ -336,6 +355,13 @@ function CanvasEditorInner() {
         </ReactFlow>
       </div>
       {selectedNodeId && <NodeConfigPanel nodeId={selectedNodeId} onDelete={deleteNode} />}
+      {id && (
+        <ExecutionLogsPanel
+          workflowId={id}
+          isOpen={showLogsPanel}
+          onClose={() => setShowLogsPanel(false)}
+        />
+      )}
     </div>
   );
 }

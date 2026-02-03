@@ -22,12 +22,29 @@ A minimal viable product (MVP) implementation of an n8n-like workflow automation
 # Install dependencies
 pnpm install
 
+# Seed the database with initial admin user
+pnpm --filter backend seed
+
 # Start backend (dev mode)
 pnpm dev:backend
 
 # Start frontend (dev mode)
 pnpm dev:frontend
 ```
+
+### Database Setup
+
+After installing dependencies, run the seed script to create an initial admin user:
+
+```bash
+pnpm --filter backend seed
+```
+
+**Seed Account Credentials:**
+- **Email**: `admin@example.com`
+- **Password**: `p@ssw0rd`
+
+> **Note**: The seed script will create the admin user if it doesn't exist, or update the password if the user already exists.
 
 ### Environment Variables
 
