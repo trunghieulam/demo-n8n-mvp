@@ -8,10 +8,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export class AuthService {
-  private userRepository: Repository<User>;
-
-  constructor() {
-    this.userRepository = AppDataSource.getRepository(User);
+  private get userRepository(): Repository<User> {
+    if (!AppDataSource.isInitialized) {
+      throw new Error('Database not initialized');
+    }
+    return AppDataSource.getRepository(User);
   }
 
   async register(
@@ -20,9 +21,12 @@ export class AuthService {
     firstName: string,
     lastName: string
   ): Promise<User> {
+    // Normalize email (trim and lowercase for consistency)
+    const normalizedEmail = email.trim().toLowerCase();
+    
     // Check if user exists
     const existingUser = await this.userRepository.findOne({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
@@ -34,7 +38,7 @@ export class AuthService {
 
     // Create user
     const user = this.userRepository.create({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       firstName,
       lastName,
@@ -45,23 +49,31 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<{ user: User; token: string }> {
+    // Normalize email (trim and lowercase for consistency)
+    const normalizedEmail = email.trim().toLowerCase();
+    
     const user = await this.userRepository.findOne({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
+      console.error(`[AuthService] Login failed: User not found for email: ${normalizedEmail}`);
       throw new Error('Invalid email or password');
     }
 
     if (!user.isActive) {
+      console.error(`[AuthService] Login failed: User account is inactive for email: ${normalizedEmail}`);
       throw new Error('User account is inactive');
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
+      console.error(`[AuthService] Login failed: Invalid password for email: ${normalizedEmail}`);
       throw new Error('Invalid email or password');
     }
+    
+    console.log(`[AuthService] Login successful for email: ${normalizedEmail}`);
 
     // Generate JWT token
     const token = jwt.sign(

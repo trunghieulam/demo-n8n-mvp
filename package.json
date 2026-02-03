@@ -11,7 +11,8 @@
     "dev:frontend": "pnpm --filter frontend dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint"
+    "lint": "pnpm -r lint",
+    "kill-ports": "node kill-ports.js"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

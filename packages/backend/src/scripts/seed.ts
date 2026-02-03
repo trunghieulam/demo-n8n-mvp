@@ -11,31 +11,30 @@ async function seed() {
     const userRepository = AppDataSource.getRepository(User);
 
     // Check if admin user exists
+    const normalizedEmail = 'admin@example.com';
     const existingAdmin = await userRepository.findOne({
-      where: { email: 'admin@example.com' },
+      where: { email: normalizedEmail },
     });
 
-    if (existingAdmin) {
-      console.log('Admin user already exists');
-      await AppDataSource.destroy();
-      return;
-    }
-
-    // Create admin user
     const hashedPassword = await bcrypt.hash('p@ssw0rd', 10);
 
-    const adminUser = userRepository.create({
-      email: 'admin@example.com',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      isActive: true,
-    });
+    if (existingAdmin) {
+      // Update existing admin user password to ensure it's correct
+      existingAdmin.password = hashedPassword;
+      existingAdmin.isActive = true;
+      await userRepository.save(existingAdmin);
+    } else {
+      // Create admin user
+      const adminUser = userRepository.create({
+        email: normalizedEmail,
+        password: hashedPassword,
+        firstName: 'Admin',
+        lastName: 'User',
+        isActive: true,
+      });
 
-    await userRepository.save(adminUser);
-    console.log('Admin user created:');
-    console.log('Email: admin@example.com');
-    console.log('Password: p@ssw0rd');
+      await userRepository.save(adminUser);
+    }
 
     await AppDataSource.destroy();
   } catch (error) {

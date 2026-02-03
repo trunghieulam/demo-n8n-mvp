@@ -34,10 +34,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       const response = await apiClient.post('/auth/login', { email, password });
       const { token, user } = response.data;
       
+      if (!token || !user) {
+        throw new Error('Invalid response from server');
+      }
+      
       localStorage.setItem('token', token);
       set({ token, user, isAuthenticated: true, isLoading: false });
     } catch (error: any) {
-      set({ isLoading: false });
+      set({ isLoading: false, isAuthenticated: false });
+      // Re-throw error so Login component can handle it
       throw error;
     }
   },
