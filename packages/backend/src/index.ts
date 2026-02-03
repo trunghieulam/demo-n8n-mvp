@@ -5,6 +5,7 @@ import { createServer } from 'http';
 import { AppDataSource } from './config/database.js';
 import apiRoutes from './routes/index.js';
 import { setupSocketIO } from './config/socket.js';
+import { logger } from './utils/logger.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,20 +27,20 @@ app.use('/api/v1', apiRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Error:', err);
+  logger.error('Request error', err, { component: 'BACKEND' });
   res.status(500).json({ error: 'Internal server error' });
 });
 
 // Initialize database
 AppDataSource.initialize()
   .then(() => {
-    console.log('Database initialized');
+    logger.backend('Database initialized');
     
     httpServer.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      logger.backend(`Server running on http://localhost:${PORT}`);
     });
   })
   .catch((error) => {
-    console.error('Database initialization error:', error);
+    logger.error('Database initialization error', error, { component: 'BACKEND' });
     process.exit(1);
   });

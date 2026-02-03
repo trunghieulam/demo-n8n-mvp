@@ -11,10 +11,6 @@ import {
   JoinTable,
 } from 'typeorm';
 import { User } from './User.js';
-import { Execution } from './Execution.js';
-import { Webhook } from './Webhook.js';
-import { Tag } from './Tag.js';
-import { WorkflowTag } from './WorkflowTag.js';
 import type { INode, IConnections, WorkflowSettings } from '@shared/types';
 
 @Entity('workflows')
@@ -43,11 +39,11 @@ export class Workflow {
   @Column('json', { nullable: true })
   settings?: WorkflowSettings;
 
-  @ManyToOne(() => User)
+  @ManyToOne('User', 'workflows')
   @JoinColumn({ name: 'userId' })
-  user!: User;
+  user!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   userId!: string;
 
   @CreateDateColumn()
@@ -56,17 +52,17 @@ export class Workflow {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @OneToMany(() => Execution, (execution) => execution.workflow)
-  executions!: Execution[];
+  @OneToMany('Execution', 'workflow')
+  executions!: any[];
 
-  @OneToMany(() => Webhook, (webhook) => webhook.workflow)
-  webhooks!: Webhook[];
+  @OneToMany('Webhook', 'workflow')
+  webhooks!: any[];
 
-  @ManyToMany(() => Tag, (tag) => tag.workflows)
+  @ManyToMany('Tag', 'workflows')
   @JoinTable({
     name: 'workflow_tags',
     joinColumn: { name: 'workflowId', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'tagId', referencedColumnName: 'id' },
   })
-  tags!: Tag[];
+  tags!: any[];
 }

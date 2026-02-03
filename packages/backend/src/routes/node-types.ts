@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { NodeTypeController } from '../controllers/NodeTypeController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(authMiddleware); // All routes require authentication
 

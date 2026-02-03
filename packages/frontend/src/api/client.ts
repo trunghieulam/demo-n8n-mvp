@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(
     }
     
     // CRITICAL FIX: Manually construct the full relative URL
-    // This ensures it goes through Vite proxy instead of directly to backend
+    // This ensures it goes through Nginx proxy instead of directly to backend
     if (config.url) {
       // Remove any absolute URL and make it relative
       let urlPath = config.url;
@@ -39,8 +39,11 @@ apiClient.interceptors.request.use(
         urlPath = '/' + urlPath;
       }
       
-      // Construct full relative URL: /api/v1 + /workflows = /api/v1/workflows
-      const basePath = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+      // Construct full relative URL: /api/v1 + /auth/login = /api/v1/auth/login
+      // ALWAYS use /api/v1 as the base path for Docker/Nginx proxy
+      const basePath = '/api/v1';
+      
+      // Construct full path: /api/v1 + /auth/login = /api/v1/auth/login
       const fullPath = basePath + urlPath;
       
       // Set the URL directly (this bypasses axios's baseURL resolution)

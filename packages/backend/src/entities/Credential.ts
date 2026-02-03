@@ -7,7 +7,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { User } from './User.js';
 
 @Entity('credentials')
 export class Credential {
@@ -23,11 +22,11 @@ export class Credential {
   @Column('text')
   data!: string; // encrypted JSON
 
-  @ManyToOne(() => User)
+  @ManyToOne('User', 'credentials')
   @JoinColumn({ name: 'userId' })
-  user!: User;
+  user!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   userId!: string;
 
   @Column('boolean', { default: true })

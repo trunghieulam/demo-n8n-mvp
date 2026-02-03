@@ -3,6 +3,7 @@ import { Execution } from '../entities/Execution.js';
 import { Workflow } from '../entities/Workflow.js';
 import { NodeRegistry } from '../nodes/NodeRegistry.js';
 import { CredentialService } from './CredentialService.js';
+import { logger } from '../utils/logger.js';
 import type { INode, IConnections, ExecutionContext, ExecutionData, WorkflowSnapshot } from '@shared/types';
 
 export class WorkflowExecutor {
@@ -35,6 +36,7 @@ export class WorkflowExecutor {
     });
 
     await this.executionRepository.save(execution);
+    logger.execution(`Starting workflow execution: ${workflow.name}`, execution.id);
 
     try {
       // Build execution context
@@ -57,6 +59,9 @@ export class WorkflowExecutor {
       execution.finishedAt = new Date();
 
       await this.executionRepository.save(execution);
+      
+      const duration = execution.finishedAt.getTime() - execution.startedAt.getTime();
+      logger.execution(`Workflow execution completed: ${result.status} (${duration}ms)`, execution.id);
 
       return execution;
     } catch (error: any) {
@@ -87,6 +92,11 @@ export class WorkflowExecutor {
       ];
 
       await this.executionRepository.save(execution);
+      
+      logger.error('Workflow execution failed', error, { 
+        component: 'EXECUTION', 
+        executionId: execution.id 
+      });
 
       return execution;
     }
@@ -244,9 +254,11 @@ export class WorkflowExecutor {
 
   private async executeNode(node: INode, context: ExecutionContext, inputData: unknown): Promise<any> {
     const startTime = Date.now();
+    const executionId = context.variables?.executionId || 'unknown';
 
     try {
       if (node.disabled) {
+        logger.node(`Node ${node.name} (${node.id}) is disabled, passing through`, node.id, executionId as string);
         // Pass through input if node is disabled
         return {
           main: Array.isArray(inputData)
@@ -260,8 +272,12 @@ export class WorkflowExecutor {
         throw new Error(`Unknown node type: ${node.type}`);
       }
 
+      logger.node(`Executing node: ${node.name} (${node.type})`, node.id, executionId as string);
+
       const result = await nodeType.execute(context, node, inputData);
       const executionTime = Date.now() - startTime;
+
+      logger.node(`Node ${node.name} completed in ${executionTime}ms`, node.id, executionId as string);
 
       return {
         ...result,
@@ -273,6 +289,11 @@ export class WorkflowExecutor {
       };
     } catch (error: any) {
       const executionTime = Date.now() - startTime;
+      logger.error(`Node ${node.name} execution failed`, error, {
+        component: 'NODE',
+        nodeId: node.id,
+        executionId: executionId as string,
+      });
       return {
         error: [
           {

@@ -7,8 +7,6 @@ import {
   JoinColumn,
   ManyToMany,
 } from 'typeorm';
-import { User } from './User.js';
-import { Workflow } from './Workflow.js';
 
 @Entity('tags')
 export class Tag {
@@ -18,16 +16,16 @@ export class Tag {
   @Column('varchar')
   name!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne('User', 'tags')
   @JoinColumn({ name: 'userId' })
-  user!: User;
+  user!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   userId!: string;
 
   @CreateDateColumn()
   createdAt!: Date;
 
-  @ManyToMany(() => Workflow, (workflow) => workflow.tags)
-  workflows!: Workflow[];
+  @ManyToMany('Workflow', 'tags')
+  workflows!: any[];
 }

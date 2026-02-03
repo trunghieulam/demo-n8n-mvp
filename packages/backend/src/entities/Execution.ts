@@ -6,7 +6,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from './User.js';
-import { Workflow } from './Workflow.js';
 import type { ExecutionMode, ExecutionStatus, ExecutionData, WorkflowSnapshot } from '@shared/types';
 
 @Entity('executions')
@@ -14,18 +13,18 @@ export class Execution {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => Workflow)
+  @ManyToOne('Workflow', 'executions')
   @JoinColumn({ name: 'workflowId' })
-  workflow!: Workflow;
+  workflow!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   workflowId!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne('User', 'executions')
   @JoinColumn({ name: 'userId' })
-  user!: User;
+  user!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   userId!: string;
 
   @Column('varchar')
@@ -34,10 +33,10 @@ export class Execution {
   @Column('varchar')
   status!: ExecutionStatus;
 
-  @Column('datetime')
+  @Column('timestamp')
   startedAt!: Date;
 
-  @Column('datetime', { nullable: true })
+  @Column('timestamp', { nullable: true })
   finishedAt?: Date;
 
   @Column('json')
@@ -46,6 +45,6 @@ export class Execution {
   @Column('json')
   workflowData!: WorkflowSnapshot;
 
-  @Column('varchar', { length: 36, nullable: true })
+  @Column('uuid', { nullable: true })
   retryOf?: string;
 }

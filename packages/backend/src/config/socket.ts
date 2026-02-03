@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketServer } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { AuthService } from '../services/AuthService.js';
+import { logger } from '../utils/logger.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
 const authService = new AuthService();
@@ -37,18 +38,20 @@ export function setupSocketIO(httpServer: HttpServer): SocketServer {
   });
 
   io.on('connection', (socket) => {
-    console.log(`Socket connected: ${socket.data.userId}`);
+    logger.info(`Socket connected: ${socket.data.userId}`, { component: 'SOCKET' });
 
     socket.on('subscribe:execution', (executionId: string) => {
       socket.join(`execution:${executionId}`);
+      logger.debug(`Socket ${socket.data.userId} subscribed to execution ${executionId}`, { component: 'SOCKET' });
     });
 
     socket.on('unsubscribe:execution', (executionId: string) => {
       socket.leave(`execution:${executionId}`);
+      logger.debug(`Socket ${socket.data.userId} unsubscribed from execution ${executionId}`, { component: 'SOCKET' });
     });
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${socket.data.userId}`);
+      logger.info(`Socket disconnected: ${socket.data.userId}`, { component: 'SOCKET' });
     });
   });
 

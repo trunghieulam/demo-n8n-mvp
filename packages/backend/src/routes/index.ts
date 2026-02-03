@@ -8,7 +8,7 @@ import nodeTypeRoutes from './node-types.js';
 import executionRoutes from './executions.js';
 import webhookRoutes from './webhooks.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);

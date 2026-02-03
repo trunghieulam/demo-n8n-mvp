@@ -1,20 +1,18 @@
 import { Entity, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Workflow } from './Workflow.js';
-import { Tag } from './Tag.js';
 
 @Entity('workflow_tags')
 export class WorkflowTag {
-  @PrimaryColumn('varchar', { length: 36 })
+  @PrimaryColumn('uuid')
   workflowId!: string;
 
-  @PrimaryColumn('varchar', { length: 36 })
+  @PrimaryColumn('uuid')
   tagId!: string;
 
-  @ManyToOne(() => Workflow)
+  @ManyToOne('Workflow', 'tags')
   @JoinColumn({ name: 'workflowId' })
-  workflow!: Workflow;
+  workflow!: any;
 
-  @ManyToOne(() => Tag)
+  @ManyToOne('Tag', 'workflows')
   @JoinColumn({ name: 'tagId' })
-  tag!: Tag;
+  tag!: any;
 }

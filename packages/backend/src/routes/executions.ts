@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ExecutionController } from '../controllers/ExecutionController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(authMiddleware); // All routes require authentication
 

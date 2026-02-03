@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.get('/me', authMiddleware, UserController.getMe);
 router.patch('/me', authMiddleware, UserController.updateProfile);

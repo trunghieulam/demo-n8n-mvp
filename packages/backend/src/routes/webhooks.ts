@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { WebhookController } from '../controllers/WebhookController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.get('/', authMiddleware, WebhookController.list);
 router.get('/:workflowId/:nodeId', authMiddleware, WebhookController.getByWorkflowAndNode);

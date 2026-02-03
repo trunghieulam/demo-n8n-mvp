@@ -6,8 +6,8 @@ import { WorkflowExecutor } from './WorkflowExecutor.js';
 import type { ExecutionMode, ExecutionStatus } from '@shared/types';
 
 export class ExecutionService {
-  private executionRepository = Repository<Execution>;
-  private workflowRepository = Repository<Workflow>;
+  private executionRepository: Repository<Execution>;
+  private workflowRepository: Repository<Workflow>;
   private workflowExecutor = new WorkflowExecutor();
 
   constructor() {
@@ -118,9 +118,9 @@ export class ExecutionService {
 
     // Get input data from original execution (from first trigger node)
     const triggerNodes = workflow.nodes.filter((node) => {
-      const hasInput = Object.values(workflow.connections).some((connMap) =>
-        Object.values(connMap).some((connArray) =>
-          connArray.some((connGroup) => connGroup.some((conn) => conn.node === node.id))
+      const hasInput = Object.values(workflow.connections).some((connMap: any) =>
+        Object.values(connMap).some((connArray: any) =>
+          connArray.some((connGroup: any[]) => connGroup.some((conn: any) => conn.node === node.id))
         )
       );
       return !hasInput;

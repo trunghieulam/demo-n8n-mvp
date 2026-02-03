@@ -6,10 +6,6 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Workflow } from './Workflow.js';
-import { Execution } from './Execution.js';
-import { Credential } from './Credential.js';
-import { Tag } from './Tag.js';
 
 @Entity('users')
 export class User {
@@ -37,15 +33,15 @@ export class User {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @OneToMany(() => Workflow, (workflow) => workflow.user)
-  workflows!: Workflow[];
+  @OneToMany('Workflow', 'user')
+  workflows!: any[];
 
-  @OneToMany(() => Execution, (execution) => execution.user)
-  executions!: Execution[];
+  @OneToMany('Execution', 'user')
+  executions!: any[];
 
-  @OneToMany(() => Credential, (credential) => credential.user)
-  credentials!: Credential[];
+  @OneToMany('Credential', 'user')
+  credentials!: any[];
 
-  @OneToMany(() => Tag, (tag) => tag.user)
-  tags!: Tag[];
+  @OneToMany('Tag', 'user')
+  tags!: any[];
 }

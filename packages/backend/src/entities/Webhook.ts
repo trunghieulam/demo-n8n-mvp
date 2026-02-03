@@ -6,18 +6,17 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Workflow } from './Workflow.js';
 
 @Entity('webhooks')
 export class Webhook {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => Workflow)
+  @ManyToOne('Workflow', 'webhooks')
   @JoinColumn({ name: 'workflowId' })
-  workflow!: Workflow;
+  workflow!: any;
 
-  @Column('varchar', { length: 36 })
+  @Column('uuid')
   workflowId!: string;
 
   @Column('varchar')
