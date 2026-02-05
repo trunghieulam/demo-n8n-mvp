@@ -4,13 +4,13 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      FRONTEND (Vue 3 + TypeScript)              │
+│                   FRONTEND (React + TypeScript)                 │
 │  ┌──────────────┬──────────────┬───────────┬──────────────────┐ │
 │  │  Workflows   │   Canvas     │ Execution │   Credentials    │ │
 │  │   List       │   Editor     │   Logs    │   Manager        │ │
 │  └──────────────┴──────────────┴───────────┴──────────────────┘ │
 │  ┌────────────────────────────────────────────────────────────┐ │
-│  │   Pinia Stores: workflow, canvas, execution, ui, rbac     │ │
+│  │   Zustand Stores: workflow, canvas, credential, nodeTypes │ │
 │  └────────────────────────────────────────────────────────────┘ │
 └────────────┬──────────────────────────────────────────────────────┘
              │ REST API (JSON)
@@ -88,15 +88,16 @@
 
 ## Detailed Architecture Layers
 
-### 1. Frontend Layer (Vue 3)
+### 1. Frontend Layer (React)
 
 **Technology Stack:**
-- Vue 3 framework with Composition API
+- React framework with hooks
 - TypeScript for type safety
-- Pinia for state management (global app state)
+- Zustand for state management (global app state)
 - Vite for fast development and builds
-- @n8n/design-system for UI components
-- Axios/fetch for HTTP client
+- Tailwind CSS for UI styling
+- React Flow for canvas editor
+- Axios for HTTP client
 
 **Key Pages/Views:**
 - **Workflows List** - Display all user workflows with CRUD actions
@@ -105,14 +106,14 @@
 - **Credentials Manager** - Store and manage integration credentials
 - **Settings** - User profile and preferences
 
-**State Management (Pinia Stores):**
+**State Management (Zustand Stores):**
 ```typescript
 // Example stores
-workflowStore - Current workflow, list of workflows, active node
-canvasStore - Node positions, zoom level, pan offset
-executionStore - Execution history, current execution status
-uiStore - Modals open/closed, sidebar collapsed, notifications
-credentialStore - List of credentials, selected credential
+workflowStore - Current workflow, list of workflows, search/filter
+canvasStore - Node positions, zoom level, pan offset, selected node
+credentialStore - List of credentials, type filter
+nodeTypesStore - Available node types
+authStore - Current user, authentication token
 ```
 
 **API Client Layer:**
@@ -346,7 +347,7 @@ CREATE INDEX idx_webhooks_workflowId_path ON webhooks(workflowId, webhookPath);
    ↓
 5. RESPONSE: 201 + {id, name, nodes: [], connections: {}, ...}
    ↓
-6. FRONTEND: Store in workflowStore, navigate to Canvas Editor
+6. FRONTEND: Store in workflowStore (Zustand), navigate to Canvas Editor
    ↓
 7. USER ACTION: Add nodes, connect them, click "Execute"
    ↓
@@ -364,9 +365,9 @@ CREATE INDEX idx_webhooks_workflowId_path ON webhooks(workflowId, webhookPath);
    ↓
 10. RESPONSE: 201 + {executionId, status: "running"}
     ↓
-11. FRONTEND: WebSocket subscribes to execution updates
-    ├─ Listens for "execution.progress" events
-    ├─ Updates executionStore with node outputs in real-time
+11. FRONTEND: Execution logs fetched via API polling or WebSocket
+    ├─ Listens for execution updates
+    ├─ Updates execution list in component state
     └─ Displays logs as execution progresses
     ↓
 12. BACKEND (Async): WorkflowExecutor executes workflow
@@ -388,13 +389,13 @@ CREATE INDEX idx_webhooks_workflowId_path ON webhooks(workflowId, webhookPath);
 ```
 ┌──────────────────┐
 │   Frontend UI    │
-│ (Vue Components) │
+│ (React Components) │
 └────────┬─────────┘
          │
          │ dispatch
          ▼
 ┌──────────────────────┐
-│   Pinia Stores       │
+│   Zustand Stores     │
 │ (State Management)   │
 └────────┬─────────────┘
          │
@@ -512,11 +513,11 @@ catch (error) {
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Vue 3 + TypeScript + Pinia + Vite |
+| Frontend | React + TypeScript + Zustand + Vite + React Flow |
 | API | Express.js + TypeScript |
 | Services | Node.js + TypeScript + DI pattern |
 | Database | TypeORM + SQLite/PostgreSQL/MySQL |
-| Execution | n8n-workflow + n8n-core libraries |
-| Testing | Jest (backend) + Vitest (frontend) |
+| Execution | Custom workflow executor (topological sort) |
+| Testing | Jest (backend) + React Testing Library (frontend) |
 | Code Quality | Biome (formatter) + ESLint + TypeScript |
 | Package Manager | pnpm + monorepo workspaces |

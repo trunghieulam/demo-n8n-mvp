@@ -80,6 +80,22 @@ Register a new user account.
 
 ---
 
+#### `GET /auth/me`
+Get current authenticated user (alternative to `/users/me`).
+
+**Response (200):**
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+```
+
+---
+
 ### 2. Users
 
 #### `GET /users/me`
@@ -118,6 +134,41 @@ Update current user profile.
   "lastName": "Smith"
 }
 ```
+
+---
+
+#### `PATCH /users/me/password`
+Change user password.
+
+**Request:**
+```json
+{
+  "currentPassword": "old_password",
+  "newPassword": "new_secure_password"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Password updated successfully"
+}
+```
+
+**Errors:**
+- `400` - Current password is incorrect
+- `400` - New password does not meet requirements
+
+---
+
+#### `DELETE /users/me`
+Delete user account and all associated data.
+
+**Response (204):** No content
+
+**Notes:**
+- Permanently deletes user account, workflows, executions, credentials, and tags
+- Cannot be undone
 
 ---
 
@@ -361,6 +412,53 @@ Create a copy of the workflow with a new name.
 
 ---
 
+#### `GET /workflows/templates`
+List available workflow templates.
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": "template-1",
+      "name": "Weather Alert",
+      "description": "Get weather alerts via webhook",
+      "nodes": [...],
+      "connections": {...}
+    }
+  ]
+}
+```
+
+---
+
+#### `POST /workflows/from-template`
+Create a new workflow from a template.
+
+**Request:**
+```json
+{
+  "templateId": "template-1",
+  "name": "My Weather Alert",
+  "description": "Custom description"
+}
+```
+
+**Response (201):**
+```json
+{
+  "id": "uuid",
+  "name": "My Weather Alert",
+  "description": "Custom description",
+  "nodes": [...],
+  "connections": {...},
+  "isActive": false,
+  "createdAt": "2024-01-20T15:45:00Z"
+}
+```
+
+---
+
 ### 4. Executions
 
 #### `GET /executions`
@@ -368,7 +466,7 @@ List execution history for all workflows or specific workflow.
 
 **Query Parameters:**
 - `workflowId` (string, optional) - Filter by workflow ID
-- `status` (enum, optional) - Filter by status: `success`, `error`, `running`, `waiting`
+- `status` (enum, optional) - Filter by status: `success`, `error`, `running`
 - `limit` (number, default: 20)
 - `offset` (number, default: 0)
 - `sort` (string, default: "startedAt:desc") - Sort by field
@@ -407,11 +505,11 @@ Get full details of a specific execution.
 {
   "id": "exec-uuid",
   "workflowId": "wf-uuid",
-  "workflowName": "Send Slack Notification",
-  "userId": "user-uuid",
-  "status": "success",
-  "mode": "manual",
-  "startedAt": "2024-01-20T16:00:00Z",
+      "workflowName": "Send Slack Notification",
+      "userId": "user-uuid",
+      "status": "success",
+      "mode": "webhook",
+      "startedAt": "2024-01-20T16:00:00Z",
   "finishedAt": "2024-01-20T16:00:05Z",
   "executionData": {
     "resultData": {
@@ -766,14 +864,14 @@ Create a new tag.
 
 ---
 
-#### `PATCH /workflows/{workflowId}/tags`
+#### `PATCH /tags/workflows/{workflowId}`
 Add or remove tags from a workflow.
 
 **Request:**
 ```json
 {
-  "add": ["important", "slack-related"],
-  "remove": ["old-tag"]
+  "add": ["tag-uuid-1", "tag-uuid-2"],
+  "remove": ["tag-uuid-3"]
 }
 ```
 
@@ -785,6 +883,10 @@ Add or remove tags from a workflow.
   "updatedAt": "2024-01-20T16:00:00Z"
 }
 ```
+
+**Notes:**
+- `add` and `remove` accept arrays of tag IDs
+- Tags are added/removed by ID, not by name
 
 ---
 
@@ -828,6 +930,37 @@ Get list of available node types for the current user.
       ...
     }
   ]
+}
+```
+
+---
+
+#### `POST /node-types/test-connection`
+Test connection for a node type (e.g., HTTP node with credentials).
+
+**Request:**
+```json
+{
+  "nodeType": "n8n-nodes-base.http",
+  "url": "https://api.example.com/test",
+  "method": "GET",
+  "credentialId": "cred-uuid"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Connection successful"
+}
+```
+
+**Response (200) - Failed:**
+```json
+{
+  "success": false,
+  "error": "Connection failed: 401 Unauthorized"
 }
 ```
 
@@ -897,12 +1030,19 @@ Consider adding rate limiting for production:
 |--------|----------|---------|
 | POST | `/auth/login` | Get JWT token |
 | POST | `/auth/register` | Create account |
+| GET | `/auth/me` | Get current user |
 | GET | `/users/me` | Get profile |
+| PATCH | `/users/me` | Update profile |
+| PATCH | `/users/me/password` | Change password |
+| DELETE | `/users/me` | Delete account |
 | GET | `/workflows` | List workflows |
 | POST | `/workflows` | Create workflow |
+| GET | `/workflows/templates` | List templates |
+| POST | `/workflows/from-template` | Create from template |
 | GET | `/workflows/{id}` | Get workflow |
 | PATCH | `/workflows/{id}` | Update workflow |
 | DELETE | `/workflows/{id}` | Delete workflow |
+| POST | `/workflows/{id}/duplicate` | Duplicate workflow |
 | POST | `/workflows/{id}/activate` | Activate workflow |
 | POST | `/workflows/{id}/deactivate` | Deactivate workflow |
 | POST | `/workflows/{id}/execute` | Execute workflow |
@@ -910,13 +1050,21 @@ Consider adding rate limiting for production:
 | GET | `/executions/{id}` | Get execution details |
 | POST | `/executions/{id}/retry` | Retry execution |
 | POST | `/executions/{id}/stop` | Stop execution |
+| DELETE | `/executions/{id}` | Delete execution |
 | GET | `/credentials` | List credentials |
 | POST | `/credentials` | Create credential |
+| GET | `/credentials/{id}` | Get credential |
 | PATCH | `/credentials/{id}` | Update credential |
 | DELETE | `/credentials/{id}` | Delete credential |
+| POST | `/credentials/{id}/test` | Test credential |
 | GET | `/node-types` | List available nodes |
+| POST | `/node-types/test-connection` | Test node connection |
 | GET | `/tags` | List tags |
 | POST | `/tags` | Create tag |
-| PATCH | `/workflows/{id}/tags` | Add/remove tags |
+| PATCH | `/tags/workflows/{id}` | Add/remove tags |
+| DELETE | `/tags/{id}` | Delete tag |
+| GET | `/webhooks` | List webhooks |
+| GET | `/webhooks/{workflowId}/{nodeId}` | Get webhook |
+| POST | `/webhooks/{workflowId}/{nodeId}/test` | Test webhook |
 
-**Total: ~25 core endpoints** (excludes admin, AI, advanced features)
+**Total: ~38 core endpoints** (excludes admin, AI, advanced features)

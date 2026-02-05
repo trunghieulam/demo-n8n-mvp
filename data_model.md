@@ -91,13 +91,13 @@ Represents a single run of a workflow.
 - `userId` (UUID, FK) - Who triggered the execution
 - `mode` (enum) - How it was triggered:
   - `manual` - User clicked "Execute"
-  - `trigger` - Webhook or timer triggered it
+  - `trigger` - Timer/schedule triggered it
+  - `webhook` - Webhook request triggered it
   - `test` - Test webhook
 - `status` (enum) - Execution result:
   - `running` - Currently executing
   - `success` - Completed successfully
   - `error` - Failed with error
-  - `waiting` - Waiting for webhook callback
 - `startedAt` (timestamp) - When execution started
 - `finishedAt` (timestamp, nullable) - When execution completed
 - `executionData` (JSON, large) - Complete execution trace:
@@ -243,7 +243,8 @@ Describes how nodes are connected in a workflow (embedded in Workflow.connection
            │
            ├─→ EXECUTION (many)
            │   ├─ workflowId (FK)
-           │   ├─ status: running|success|error|waiting
+           │   ├─ status: running|success|error
+           │   ├─ mode: manual|trigger|webhook|test
            │   ├─ executionData: JSON (trace)
            │   └─ workflowData: JSON (snapshot)
            │

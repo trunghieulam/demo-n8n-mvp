@@ -9,10 +9,12 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ## Phase 1: MVP Core (Must Have)
 
 ### 1. User Management
-- [ ] User registration with email and password
-- [ ] User login with JWT authentication 
-- [ ] User profile (view and edit first/last name)
-- [ ] Session management (token expiry, logout)
+- [x] User registration with email and password
+- [x] User login with JWT authentication 
+- [x] User profile (view and edit first/last name)
+- [x] Session management (token expiry, logout)
+- [x] Change password
+- [x] Delete account
 
 **Acceptance Criteria:**
 - For MVP, create a simple user with account "admin" and password "p@ssw0rd" for testing
@@ -20,14 +22,15 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 2. Workflow CRUD (Create, Read, Update, Delete)
-- [ ] Create new workflow with name and description
-- [ ] View list of all user workflows (with pagination)
-- [ ] Search workflows by name/description
-- [ ] Edit workflow details (name, description, nodes, connections)
-- [ ] Delete workflow with confirmation
-- [ ] Duplicate/clone workflow with new name
-- [ ] View workflow details (full node and connection definitions)
-- [ ] Save workflow in "draft" state (not active)
+- [x] Create new workflow with name and description
+- [x] View list of all user workflows (with pagination)
+- [x] Search workflows by name/description
+- [x] Edit workflow details (name, description, nodes, connections)
+- [x] Delete workflow with confirmation
+- [x] Duplicate/clone workflow with new name
+- [x] View workflow details (full node and connection definitions)
+- [x] Save workflow in "draft" state (not active)
+- [x] Create workflow from template
 
 **Acceptance Criteria:**
 - Workflow validation passes before saving (valid nodes, connections)
@@ -39,15 +42,15 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 3. Visual Workflow Canvas Editor
-- [ ] Drag-and-drop interface to add nodes to canvas
-- [ ] Visual representation of nodes with input/output ports
-- [ ] Connect nodes by dragging between ports (create connections)
-- [ ] Pan and zoom canvas (mouse wheel, toolbar buttons)
-- [ ] Select node to view/edit configuration
-- [ ] Node property editor (right panel) with parameter inputs
-- [ ] Delete connections by clicking on them
+- [x] Drag-and-drop interface to add nodes to canvas
+- [x] Visual representation of nodes with input/output ports
+- [x] Connect nodes by dragging between ports (create connections)
+- [x] Pan and zoom canvas (mouse wheel, toolbar buttons)
+- [x] Select node to view/edit configuration
+- [x] Node property editor (right panel) with parameter inputs
+- [x] Delete connections by clicking on them
 - [ ] Undo/Redo functionality (up to 20 actions)
-- [ ] Save button to persist workflow changes
+- [x] Save button to persist workflow changes
 - [ ] Show unsaved changes indicator (dot next to workflow name)
 - [ ] Context menu on canvas (right-click for options)
 
@@ -175,14 +178,14 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 5. Workflow Execution
-- [ ] Execute workflow manually (click Execute button)
-- [ ] Show execution status (running, success, error, waiting)
-- [ ] Execute asynchronously (non-blocking)
-- [ ] Store execution results
-- [ ] Stop running execution
+- [x] Execute workflow manually (click Execute button)
+- [x] Show execution status (running, success, error)
+- [x] Execute asynchronously (non-blocking)
+- [x] Store execution results
+- [x] Stop running execution
 - [ ] Show execution progress in real-time (via WebSocket)
-- [ ] Node-by-node execution with input/output data
-- [ ] Error handling and error paths
+- [x] Node-by-node execution with input/output data
+- [x] Error handling and error paths
 
 **Acceptance Criteria:**
 - Execution completes within timeout (300s default)
@@ -194,15 +197,15 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 6. Execution History & Logs
-- [ ] View execution history for workflow (list view)
-- [ ] Filter by status (success, error, running, waiting)
-- [ ] Sort by date (newest first by default)
-- [ ] View execution details (node-by-node results)
-- [ ] Show execution data and logs
-- [ ] Pagination for large execution lists
-- [ ] Retry failed execution
+- [x] View execution history for workflow (list view)
+- [x] Filter by status (success, error, running)
+- [x] Sort by date (newest first by default)
+- [x] View execution details (node-by-node results)
+- [x] Show execution data and logs
+- [x] Pagination for large execution lists
+- [x] Retry failed execution
 - [ ] Download execution data as JSON
-- [ ] Display execution duration and node timings
+- [x] Display execution duration and node timings
 
 **Acceptance Criteria:**
 - Execution list shows at least: status, timestamp, duration, mode
@@ -214,18 +217,18 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 7. Credential Management
-- [ ] Create credentials (API keys, tokens, usernames/passwords)
-- [ ] List all credentials
-- [ ] Edit credential details
-- [ ] Delete credential
-- [ ] Filter credentials by type
-- [ ] Test credential (verify it works with service)
-- [ ] Support multiple credential types:
+- [x] Create credentials (API keys, tokens, usernames/passwords)
+- [x] List all credentials
+- [x] Edit credential details
+- [x] Delete credential
+- [x] Filter credentials by type
+- [x] Test credential (verify it works with service)
+- [x] Support multiple credential types:
   - HTTP Basic Auth (username + password)
   - HTTP Bearer Token
   - Slack OAuth 2.0
   - Generic API Key
-- [ ] Encrypt credentials at rest
+- [x] Encrypt credentials at rest
 - [ ] Display credential usage (which workflows use it)
 
 **Acceptance Criteria:**
@@ -273,12 +276,12 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 10. Authentication & Authorization
-- [ ] JWT token-based authentication
-- [ ] All protected endpoints require valid token
-- [ ] Token expiry and refresh handling
-- [ ] Users can only access their own workflows/executions/credentials
-- [ ] 401 error for invalid/expired token
-- [ ] 403 error for unauthorized access
+- [x] JWT token-based authentication
+- [x] All protected endpoints require valid token
+- [x] Token expiry and refresh handling
+- [x] Users can only access their own workflows/executions/credentials
+- [x] 401 error for invalid/expired token
+- [x] 403 error for unauthorized access
 
 **Acceptance Criteria:**
 - Token included in Authorization header
@@ -290,12 +293,25 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 
 ## Phase 2: MVP Enhancement (Should Have)
 
+### 10.5. Workflow Templates
+- [x] Pre-built workflow templates
+- [x] List available templates
+- [x] Create workflow from template
+- [x] Templates include: Weather Alert, Data Processing Pipeline, API Gateway
+
+**Acceptance Criteria:**
+- Templates provide starting point for common workflows
+- User can customize template after creation
+- Templates include nodes and connections pre-configured
+
+---
+
 ### 11. Workflow Validation
-- [ ] Validate workflow structure (valid JSON)
-- [ ] Validate nodes have required parameters
-- [ ] Validate connections are valid (source/target exist)
+- [x] Validate workflow structure (valid JSON)
+- [x] Validate nodes have required parameters
+- [x] Validate connections are valid (source/target exist)
 - [ ] Warn on missing credentials
-- [ ] Show validation errors before activation
+- [x] Show validation errors before activation
 
 **Acceptance Criteria:**
 - Cannot save invalid workflow
@@ -357,10 +373,10 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 ---
 
 ### 16. Basic Error Recovery
-- [ ] Retry failed execution with same input
-- [ ] Capture and display error details
-- [ ] Error message shown in execution logs
-- [ ] Failed node clearly marked
+- [x] Retry failed execution with same input
+- [x] Capture and display error details
+- [x] Error message shown in execution logs
+- [x] Failed node clearly marked
 
 **Acceptance Criteria:**
 - Error includes node name and error message
@@ -482,7 +498,7 @@ This document outlines all features required for the n8n MVP (Minimum Viable Pro
 - Workflow versioning and history
 - Workflow collaboration/comments
 - Advanced node search and filtering
-- Workflow templates and marketplace
+- Workflow templates marketplace (basic templates implemented)
 - Node annotations and documentation
 
 ❌ **Other**

@@ -1,3 +1,5 @@
+/** @format */
+
 import 'reflect-metadata';
 import bcrypt from 'bcrypt';
 import { AppDataSource } from '../config/database.js';

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MVP frontend consists of 5 core pages that provide the essential workflow automation experience. Each page focuses on a specific user task with minimal, focused UI.
+The MVP frontend consists of 7 core pages built with React and Zustand that provide the essential workflow automation experience. Each page focuses on a specific user task with minimal, focused UI.
 
 ---
 
@@ -80,7 +80,7 @@ The MVP frontend consists of 5 core pages that provide the essential workflow au
 - Navigate between pages (20 workflows per page)
 - Show total count and current page
 
-### Pinia Store: `workflowStore`
+### Zustand Store: `workflowStore`
 ```typescript
 workflowStore = {
   workflows: Workflow[],        // All user workflows
@@ -88,14 +88,20 @@ workflowStore = {
   isLoading: boolean,
   searchQuery: string,
   selectedTags: string[],
+  pagination: { total, limit, offset },
 
   actions: {
-    fetchWorkflows(),
-    searchWorkflows(query),
-    filterByTags(tags),
+    fetchWorkflows(params?),
+    createWorkflow(name, description?),
+    createWorkflowFromTemplate(templateId, name, description?),
+    updateWorkflow(id, updates),
     deleteWorkflow(id),
-    duplicateWorkflow(id),
-    setSelectedWorkflow(id)
+    duplicateWorkflow(id, newName),
+    activateWorkflow(id),
+    deactivateWorkflow(id),
+    setSelectedWorkflow(workflow),
+    setSearchQuery(query),
+    setSelectedTags(tags)
   }
 }
 ```
@@ -210,25 +216,28 @@ workflowStore = {
 - `[▶ Execute]` - Execute workflow now
 - `[⬇ Data]` - View execution data from last run
 
-### Pinia Stores: `workflowStore`, `canvasStore`, `uiStore`
+### Zustand Stores: `workflowStore`, `canvasStore`
 ```typescript
 workflowStore = {
-  currentWorkflow: Workflow,     // Workflow being edited
-  nodes: INode[],               // Current nodes
-  connections: IConnections,    // Current connections
-  isDirty: boolean,            // Has unsaved changes
+  workflows: Workflow[],
+  selectedWorkflow: Workflow|null,
   isLoading: boolean,
+  searchQuery: string,
+  selectedTags: string[],
+  pagination: { total, limit, offset },
 
   actions: {
-    updateWorkflow(workflow),
-    addNode(node),
-    updateNode(nodeId, properties),
-    deleteNode(nodeId),
-    addConnection(sourceId, targetId),
-    deleteConnection(sourceId, targetId),
-    executeWorkflow(),
-    saveWorkflow(),
-    setActiveNode(nodeId)
+    fetchWorkflows(params?),
+    createWorkflow(name, description?),
+    createWorkflowFromTemplate(templateId, name, description?),
+    updateWorkflow(id, updates),
+    deleteWorkflow(id),
+    duplicateWorkflow(id, newName),
+    activateWorkflow(id),
+    deactivateWorkflow(id),
+    setSelectedWorkflow(workflow),
+    setSearchQuery(query),
+    setSelectedTags(tags)
   }
 }
 
@@ -245,18 +254,8 @@ canvasStore = {
   }
 }
 
-uiStore = {
-  showNodePalette: boolean,
-  showSettingsModal: boolean,
-  showExecuteModal: boolean,
-  notifications: Notification[],
-
-  actions: {
-    openSettingsModal(),
-    closeSettingsModal(),
-    addNotification(message, type)
-  }
-}
+// Note: UI state (modals, notifications) is managed locally in components
+// Execution state is fetched directly in ExecutionLogsPanel component
 ```
 
 ### User Interactions
@@ -375,30 +374,23 @@ Execution Details
 │  └─ ...
 ```
 
-### Pinia Store: `executionStore`
+### Execution State Management
 ```typescript
-executionStore = {
-  executions: Execution[],           // List of executions
-  selectedExecution: Execution|null, // Currently viewing
-  filter: {
-    status: string,
-    dateRange: { from, to },
-    workflowId: string|null
-  },
-  isLoading: boolean,
-  isRefreshing: boolean,
+// Executions are managed via component state and API calls
+// No separate Zustand store - state is local to ExecutionLogsPanel component
 
-  actions: {
-    fetchExecutions(filters),
-    fetchExecutionDetails(executionId),
-    retryExecution(executionId),
-    stopExecution(executionId),
-    deleteExecution(executionId),
-    setStatusFilter(status),
-    setDateRange(from, to),
-    refreshExecutions()
-  }
-}
+// Component state includes:
+- executions: Execution[]
+- selectedExecution: Execution|null
+- filter: { status, workflowId }
+- isLoading: boolean
+- isRefreshing: boolean
+
+// Actions via API client:
+- fetchExecutions(filters)
+- fetchExecutionDetails(executionId)
+- retryExecution(executionId)
+- deleteExecution(executionId)
 ```
 
 ### Real-Time Updates
@@ -537,24 +529,18 @@ Select Credential Type:
   - `[Test]` - Verify credential (calls API)
   - `[Save]` - Encrypt and store credential
 
-### Pinia Store: `credentialStore`
+### Zustand Store: `credentialStore`
 ```typescript
 credentialStore = {
   credentials: Credential[],
-  selectedCredential: Credential|null,
-  filter: {
-    type: string|null
-  },
   isLoading: boolean,
-  testingCredentialId: string|null,
 
   actions: {
-    fetchCredentials(filters),
-    createCredential(data),
-    updateCredential(id, data),
+    fetchCredentials(typeFilter?),
+    createCredential(name, type, data),
+    updateCredential(id, updates),
     deleteCredential(id),
-    testCredential(id),
-    setTypeFilter(type)
+    testCredential(id)
   }
 }
 ```
@@ -635,17 +621,20 @@ credentialStore = {
 - Export all user data as JSON (GDPR)
 - Delete account with confirmation
 
-### Pinia Store: `uiStore` / `userStore`
+### Zustand Store: `authStore`
 ```typescript
-userStore = {
-  user: User,
+authStore = {
+  user: User|null,
+  token: string|null,
+  isAuthenticated: boolean,
   isLoading: boolean,
 
   actions: {
-    updateProfile(firstName, lastName),
-    changePassword(currentPassword, newPassword),
-    exportData(),
-    deleteAccount(password)
+    login(email, password),
+    register(email, password, firstName, lastName),
+    logout(),
+    fetchUser(),
+    // Profile updates handled via API client directly
   }
 }
 ```
@@ -684,10 +673,10 @@ userStore = {
 Present on all authenticated pages:
 
 ```
-┌───────────────────────────────────────────────────┐
-│ [n8n Logo] | Workflows | Credentials | Settings  │
-│                          [John Doe ▼] [Logout]    │
-└───────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│ [n8n Logo] | Workflows | Credentials | Executions | Settings │
+│                              [John Doe ▼] [Logout]            │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 - `[n8n Logo]` - Click to go to dashboard
@@ -748,10 +737,10 @@ Present on all authenticated pages:
 
 | Page | Primary Store(s) | Key State |
 |------|------------------|-----------|
-| Workflows List | `workflowStore`, `uiStore` | Workflows, search, filter, pagination |
-| Canvas Editor | `workflowStore`, `canvasStore`, `uiStore` | Current workflow, nodes, connections, selected node |
-| Execution Logs | `executionStore` | Executions, filter, selected execution |
+| Workflows List | `workflowStore` | Workflows, search, filter, pagination |
+| Canvas Editor | `workflowStore`, `canvasStore` | Current workflow, nodes, connections, selected node |
+| Execution Logs | Component state | Executions, filter, selected execution |
 | Credentials | `credentialStore` | Credentials, type filter |
-| Settings | `userStore` | User profile, form state |
+| Settings | `authStore` | User profile, authentication state |
 
-All stores use Pinia for centralized state management and can subscribe to updates in real-time via WebSocket/EventBus.
+All stores use Zustand for centralized state management. Execution updates are fetched via API polling or WebSocket when available.
